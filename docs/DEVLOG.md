@@ -36,15 +36,15 @@
 
 C++ 引擎（`C++\build\gk.exe`）**功能完整、可训练、可对弈、已接进 Python 看板**。
 
-**当前（2026-10-31 14:40）**：`model/run_v2` 已跑到 **gen_083**，`best.bin` 内容 = **gen_082**
-（md5 核对；gen_082 以 33/60 = 0.5500 过门控，gen_083 是门控空档代）。配方 **4**
-（`--min-steps 800` + `--gate-threshold 0.52` + `--eval-games 60` + `--eval-every 2`）。
-目录与配方沿革明细见 §9。
+**当前（2026-11-01 00:20）**：`model/run_v2` 已跑到 **gen_096**，`best.bin` 内容 = **gen_092**
+（md5 核对）。配方 **4**（`--min-steps 800` + `--gate-threshold 0.52` + `--eval-games 60` + `--eval-every 2`）。
+目录与配方沿革明细见 §6 与 `C++/model/RUNS.md`。
 
-**棋力**：`gk elo` 的拟合停在 gen 61、之后没重跑，而且那条曲线**不能用来比较相邻代**（原因见 §17.2）。
-可信的进展数字只有定点对打：配方 4 前 10 代 **+109.5 Elo**（400 局，95%CI [+75.4, +143.5]）；
-全期 gen_016 → gen_061 是 **+139 Elo / 45 代 = +3.09 Elo/代**。
-⇒ **判断进展一律用 200 局以上的定点对打，不要看门控胜率。**
+**棋力**：Elo 已改成「持久边库 + 全局重拟合」（§19），当前 14 个版本 / 23 条边，锚点 `gen_002 = 0`，
+最新点 **`gen_092 = +200 Elo`**。每段都是同一对模型的直接对打（150 局 ±28、400 局 ±17），
+不存在分段拼接的累积误差。近期（88–96 代）门控胜率贴平在 0.483，尚未分清是学习率退火压死
+还是网络容量到顶。
+⇒ **判断进展用 ≥200 局的定点对打；门控只用来防止 `best.bin` 被崩坏权重污染。**
 
 历史（保留原因）：gen 25–43 曾连续 19 代没过门控，根因是 20 局门控的分辨率（±100 Elo）
 比后期真实速度（+1.3 Elo/代）粗两个数量级 —— 这是配方 3 把门控提到 60 局 + 配对开局的起因（§14）。
@@ -59,47 +59,17 @@ C++ 引擎（`C++\build\gk.exe`）**功能完整、可训练、可对弈、已�
 ## 1. 目录与文件
 
 ```
-C++\
-  build.bat           构建脚本（必须 CRLF！逻辑见第 2 节）
-  CMakeLists.txt      C++20 + libtorch，静态库 gk_core + gk.exe + 测试 + probe
-  src\
-    board.*           19×19 棋盘、Zobrist、合法点、to_tensor(3×361)、成五/活四判定
-    heuristics.*      与 heuristics.py 逐条对齐的先验（分数表 1e6/1e5/1e4/1e3/500/100/4）
-    mcts.*            PUCT 搜索：虚拟损失、先验宽度裁剪、根噪声、树复用
-    vcf.*             VCF 静态搜索：连续冲四必胜的廉价证明（默认关闭，见第 13 节）
-    dataset.*         Sample 结构、8 变换增广、ReplayBuffer（按代淘汰/加权）、GKD1 落盘
-    net.h / net_torch.cpp   TorchNet：与 Python state_dict 逐名对齐、手写 EMA、GKAZ1 权重格式
-    eval_torch.h      TorchEvaluator：Evaluator 接口 → net.infer_batch
-    selfplay.*        play_game：温度/认输/样本策略目标
-    trainer.*         Trainer + FusedAdam：bf16 autocast、梯度裁剪、EMA
-    gate.*            门控对局与 Wilson 判定（含配对开局 `--opening-plies`，见第 14 节）
-    elo.*             【10-28 新增】跨代 Elo 拟合：链式相邻代对局 + 每代回指锚点，bootstrap 出 CI，写 elo.json
-    batcher.*         NetService：跨对局共享批量评估器（多评估线程 + 独立 CUDA stream）
-    pipeline.*        collect_games[_mp] / run_training_loop（含门控、落盘、run.json、配方编号与 lr 退火）
-    config.h          TrainConfig = 当前配方默认值（改这里就改了面板默认值）
-    sysutil.*         优先级、exe_path、run_parallel（多进程 worker）
-    main.cpp          CLI：bench/selfplay/worker/gate/loop/play/probe/defaults/elo
-  tests\              test_rules/mcts/vcf/dataset/net/selfplay/train/gate + probe_mcts/eval/multi/train
-  tools\              cmake 4.1.2、ninja、mingw64（便携），convert_ckpt.py、analyze_log.py、
-                      label_runs.py、check_page_js.py
-  peifang\            【10-28 新增】配方档案 配方NN-*.json（参数/动机/结果/教训，看板「填入配方」直接读）
-  model\              训练产物（run_v2 = 主线，见 RUNS.md；elo.json 是棋力曲线）
-  build\              构建输出（gk.exe 等）
+README.md  LICENSE  .gitignore
+docs/        DEVLOG.md（本文）· WEIGHTS.md（权重沿革）
+C++/         CMakeLists.txt · build.bat · README.md（构建、子命令、性能表）
+  src/       33 个文件：规则 / MCTS / VCF / 自对弈 / 训练 / 门控 / Elo 边库
+  tests/     13 个测试程序（1.4 万项检查）
+  tools/     convert_ckpt.py（.pt ↔ .bin 互转）
+  peifang/   3 份配方档案（假设 / 改动 / 结果 / 教训）
+PYTHON/      53 个文件：看板服务 · 对弈页 · 旧版 Python 原型（train.py / mcts.py / network.py）
 ```
 
-Python 侧（看板）相关文件：
-
-```
-PYTHON\
-  serve_dashboard.py   看板服务（8791）+ C++ 状态/启动/停止 + SSE + 对弈页拉起 + 配方参数白名单
-  watch_progress.ps1   生成 progress_live.html（模板在脚本里，**启动时解析**）；含配方档案下拉、棋力曲线、释义块
-  web_play.py          对弈页（8770），支持 engine=python / cpp
-  _restart_dash.ps1    一键重启看板服务 + watcher 并自检
-  _restart_train.ps1   停掉 C++ 训练并按给定参数重开
-  _tmp\supervise_loop.ps1  【10-28 新增】固定配方拉起 gk loop、崩了自动重启的监督器
-```
-
----
+模型权重、回放池、构建产物都不在仓库里（见 `.gitignore`）；权重通过 Release 分发。
 
 ## 2. 构建（只有一种方式）
 
@@ -371,7 +341,7 @@ gen_060 从第 1 名（402.8）落到 123.5，虚高消除，与它 17 胜 19 �
 `merge_gen060_edges.py`（把补测局数并进 edges，注意 `wins_a` 是 **a 方**胜场，必须翻视角）、
 `elo_manual_merge_backup.json`（手工合并版，保留备查）、`elo_new.json`（全量重跑产物）。
 
-## 7. 看板集成（Python 侧）
+## 7.1 改 watch_progress.ps1 的坑（模板被常驻进程覆写）
 
 **踩到的坑（看板改了不生效，浪费了一圈排查）**：
 `progress_live.html` 是 `watch_progress.ps1` 生成的**静态产物**，而 `Flash UI.cmd` 会拉起一个**常驻的
@@ -384,7 +354,7 @@ gen_060 从第 1 名（402.8）落到 123.5，虚高消除，与它 17 胜 19 �
 `Get-CimInstance Win32_Process | ? CommandLine -match 'watch_progress\.ps1'` **只有一个**。
 多个 watch 进程会互踩（实测同时出现 2 个，页面在两种版本间跳）。
 
-## 7. 看板集成（Python 侧）
+## 7.2 Elo 对战面板（曾把 elo.json 碾成 3 个点）
 
 用户要求「在实时看板上增加 elo 对战功能，方便我看 elo 提升没有」⇒ 在「C++ 棋力曲线」卡下方
 加了对战面板（选最近 N 代 + 每对局数 + 锚点 → 后台 `gk.exe elo` → 进度条 → 跑完报「比上次 +X Elo」）。
@@ -417,7 +387,7 @@ gk.exe elo --dir ..\model\run_v2 --gens 2,3,...,61 --anchor 10 --eval-games 12 -
 **还没做的**：`_tmp\check_elo_recipe.mjs` 原先硬编码「gen 44 超出 Elo 范围」，
 已改成按 `elo.json` 实际覆盖范围分情况断言（`has44` 分支），以后补数据不用再改测试。
 
-## 7. 看板集成（Python 侧）
+## 7.3 看板结构、参数回填与重启
 
 - 看板：`http://127.0.0.1:8791`（`PYTHON\serve_dashboard.py`）
 - 版本切换：`#verBar`（Python / C++），**C++ 面板现在 7 张卡**：概览 / 损失曲线（ce·mse·配方断点）/
@@ -506,93 +476,9 @@ pwsh -NoLogo -NoProfile -File <repo>\PYTHON\_restart_dash.ps1
     **跑外部程序一律用 `Continue` + 显式检查 `$LASTEXITCODE`。** 另：本机交互式控制台是 **5.1 不是 pwsh 7**，
     §8-16 的编码修法要用 5.1 验证。见 §17.4-4/5。
 
-## 9. 当前模型状态（`C++\model`）
-
-```
-run_v2\            主线，**gen_083**（2026-10-31 14:37 落盘，配方 4）。
-                   `best.bin` 内容 = **gen_082**（md5 核对，不是 mtime 最新的那一代，见 §16.4-2）。
-                   门控记录：gen 78 = 34/60 采纳、gen 82 = 33/60 采纳、gen 76/80 被拒（0.43 / 0.47）；
-                   gen 83 是门控空档代（`--eval-every 2`）。
-                   配方沿革：gen 1–4、8–43 = 配方 1；gen 5–7 = 事故的 160/320；gen 44–65 = 配方 3；
-                   gen 66–83 = 配方 4（`--min-steps 800`）。
-                   ⚠ 这里的 gen 76–81 是**配方 4 重训出来的**权重，和 2026-10-31 凌晨那批被否决的
-                   配方 5 同名代**不是同一份东西**（那批已删，见下方 `_rejected_recipe5` 与 §16.3）。
-                   gen_001…gen_083.bin、buffer\（26 代）、train_log.jsonl（83 行，gen 1–83 无重复编号）、
-                   `train_log_rejected_recipe5.jsonl`（配方 5 那 6 行的旁路存档）、elo.json（停在 gen 61）、loop_stdout.log。
-                   `_bad160\` 里躺着 10-27 回滚出来的 gen_011/012 + 完整日志备份。
-~~model\_rejected_recipe5\~~  **2026-10-31 曾归档、同日已删除**：配方 5 的 gen_076–081 六个权重（41.7 MB，
-                   被门控全拒、定点对打 −88.7 Elo）。它们唯一的用途是复现那个负结果，而 400 局原始日志
-                   （`tsest\g81v75_s1.log` / `s2.log`）与 §16.3 的记录已足够，权重本身不含额外信息。
-                   删前先把它们移出 `run_v2`，是为了让 `find_last_gen()` 回到 75（见 §16.4-1）。
-run_v4amp\         历史（旧配方 7 代无进步），run_v2 的起点。**2026-10-27 已瘦身**：
-                   gen_001–006.bin / best.bin / buffer\ 已删（~192 MB），只留 gen_007.bin —
-                   它同时是「+190 Elo」里那个起点，删了就没法再复现 30:9。
-run_fp32\          实验（fp32 对照）——**2026-10-27 已删**（不产出模型；速度/精度数字在本文件 §5）
-broken_amp_do_not_use\  损坏（早期 bf16 缓存 bug）——**2026-10-27 已删**（结论在 §6 第 8 条）
-```
-
-**2026-10-27 清理记录**（用户：「没用的模型可以删」）：C++ 侧删 304 MB（上面三项）；
-PYTHON\models 删 1,831 MB —— 只留各 run 的 `best.pt` / `resume.pt` / 有引用价值的单代权重：
-`V3/gen_110.pt`（**champion**，SHA1 `4D799CB0…`，删前删后都核过）、`V3/gen_30.pt`（`web_play.py` 的 `DEFAULT_MODEL`）、
-`V2/gen_150.pt`（`web_play` 回落）+ `V2/gen_175.pt`（`V3/INIT.json` 的 `weights_from`）、`V4/gen_37.pt`（§4 数值对齐的参照）。
-`run3` 的 60 代权重、`exp\`、以及 V2/V3 的 `data\*.npz` 分片一并删掉。
-
-每个目录都有 `run.json`（role/note/gen_offset/recipe），`gk.exe loop` 第一次进目录时自动写、已存在不覆盖。
-
-## 10. 下一步该干什么（按价值排序）
-
-### A. 用配方 3 续训 10–20 代，检验「平台期是测量问题」（第一优先）
-
-前提：43 代的 +134 Elo（全期 ≈+3.1/代，后期 ≈+1.3/代）与 20 局门控 ±100 Elo 的分辨率对不上，所以真正要验的不是"模型还行不行"，
-而是"配方 3 之后能不能看见进步"。看两个数：
-
-1. 门控通过率是否从 20% 抬到 ~50%（`--eval-games 60 --opening-plies 2` 之后）；
-2. 跑一次 `gk elo --anchor 10` 重新拟合，**每代增益是否还在 +1.3 ~ +3 Elo 量级**。
-
-- 若两者都改善 ⇒ 继续跑，别再动旋钮。
-- 若 elo 也平坦 ⇒ 才是真到顶，转去改容量/特征/开局多样性（`--blocks/--channels`、开局库），**不要**继续调 lr。
-- 启动方式：看板训练控制 → 引擎 C++ → 「配方档案」选**配方3** → [填入配方] → [开始训练]（会先干跑给你确认命令行）。
-
-### B. 查清「并行形态」为什么差 3 倍（第二优先，唯一还有明显收益的工程项）
-
-**现象**（下面两个数不是同一套 harness，只算强线索，不算结论）：
-
-| 形态 | 吞吐 |
-|---|---|
-| `gk probe`：20 线程共用 1 个 NetService（单进程多线程） | **63.77 手/s** |
-| 生产：8 进程 × 1 worker（各自独立 CUDA context） | **24.57 手/s** |
-| 单个 worker 进程单独跑 | 7.62 手/s |
-
-8 进程合计 24.57，而 8 × 单进程 = 61 手/s ⇒ 多进程效率只有 40%。更关键的是 **8 进程形态下 GPU util 只有 10–13%**（单 worker 也是 10–13%），即大部分时间 GPU 在空转、等 CPU/调度；而 probe 16 线程时 util 高达 97%。**同一个 GPU，一个形态能打满、另一个打不满**——这比「谁快」更值得追。
-
-这与第 5 节「`--procs` 更慢、每进程 batch 只有 16 被切碎」的旧结论方向一致，但差 3 倍的量级还没解释清。
-（10-28 的推理路径实测把上限钉得更死了：单流 GPU 峰值 ≈12k 状态/s，20 线程生产形态 8.2k = 68%，
-再加评估线程只会更差（e6 比 e3 低 5.9%）——所以这条路的收益上限约 1.4×，且瓶颈是"在飞局数只有 16"，
-不是 CUDA 侧。见 `C++\README.md` §4 与第 14 节。）
-
-要做的实验：写死总工作量（16 局 × 600 sims），分别用 `gk selfplay --workers 16/12/8`（单进程多线程）和 N 个 `gk worker --workers 1`（多进程）跑同一份量，比墙钟。脚本草稿在 `C++\_tmp\ab_shape.ps1`（**从未成功执行过**，跑之前先看它的 PATH 前缀）。
-
-若确认单进程多线程快得多，就把 `config.h` 的 `mp_procs` 彻底废弃、并检查 `run_parallel` 这整条多进程路径。
-
-### C. 配方实验（便宜，但需要 GPU 空闲时间）
-
-- `n_sim 600 → 400`：一代省约 1/3 时间。V4 时代用 400，需要门控/对局验证是否掉强度。
-- `workers 20 / eval-batch 24 / eval-threads 3`：实测 50.8 vs 46 手/s，白捡 8%（已进配方 3）。
-- 两套配方的干净对照（160/320 vs 320/160，**只变 games/steps，其他全固定**）才能回答"样本 1 万 vs 2 万"到底差多少；现有证据被 lr 和 gate-ema 混淆过。
-
-### D. 别再碰的方向
-
-- CUDA Graph：**已做完（第 12 节），但 10-28 已改默认关闭**（−5.9%/噪声内，却是每代 OOM 的头号嫌疑，见 §14.1）。
-  要重开先修 `release_all()` 前后的同步 + 不要每代重建图。
-- VCF 静态搜索 / 强制着法不剪枝：**已实现并实测，两项都没有收益，已默认关闭，见第 13 节**。
-
-### E. 收尾杂项
-
-- 用浏览器刷新一次看板，确认「配方档案」下拉 + [填入配方] + 棋力曲线卡真的显示（我只在无头渲染 + DOM 桩里验过）
-- `PYTHON\progress_live.html` 是 `watch_progress.ps1` 的产物，别手改
-- 陈留文件：`model\run_v2_run.log`、`PYTHON\_restart_dash.ps1`/`_restart_train.ps1`、`PYTHON\_tmp\supervise_loop.ps1`（运维脚本，建议保留）
-- `C++\_tmp\` 已于 2026-10-26 15:30 清理（393 MB → 11.5 MB）。**剩下的 8 项不要删**，它们被代码或文档引用：`v4_gen37.bin`、`ref\`（`test_net.exe` 的基准）、`aug_ref.txt`（`test_dataset.exe` 的 numpy 参照）、`ab_shape.ps1`（第 10 节 B 的实验脚本）、`ab_mp.ps1`、`ab_rush_400.txt` / `ab_vcf_400.txt`（第 13 节的原始数据）、`rapfi_src\`（Rapfi 源码，第 13 节引用）。
-- `src\net_torch.cpp` 里 `atexit` 相关的调试残留可以清掉（配合第 12 节的析构告警）
+> §9、§10 已从公开版移除：原「当前模型状态」极易过期（当时写的是 `gen_083`，后来已经跑到 96 代），
+> 原「下一步该干什么」是个人优先级清单，不适合当公开文档。
+> 要查真实状态请看 `C++/model/RUNS.md` 与 `model/<run>/elo.json`。
 
 ## 11. 千万别做的事
 
@@ -1013,8 +899,8 @@ CPU 树操作不占时间**（推翻了早先"瓶颈在树操作"的推测，那
 | 文件 | 改动 |
 |---|---|
 | `peifang\配方05-训练再加档.json` | `status` 改「已否决」；新增 `result` 块（400 局原始数据、Elo、颜色拆分、遗留混淆、mse 是陷阱的警告）；`lesson` 追加 4 条。**⚠ 该文件已于 2026-10-31 移出 `peifang\`（留档 `_archive\peifang\`），全部教训与命令行已移入 §16.5** |
-| `HANDOFF.md` | 新增 §16（本节）；§15.7 标题改「已否决」；§15.9 待办与「别再碰」同步；§9 模型状态从陈旧的 gen_043 更新到 gen_075 |
-| `model\_rejected_recipe5\` | 新建用于归档 gen_076–081 六个权重，**同日已删**（41.7 MB，§9） |
+| `HANDOFF.md` | 新增 §16（本节）；§15.7 标题改「已否决」；§15.9 待办与「别再碰」同步；「当前模型状态」一节从陈旧的 gen_043 更新到 gen_075（该节后来已从公开版移除） |
+| `model\_rejected_recipe5\` | 新建用于归档 gen_076–081 六个权重，**同日已删**（41.7 MB） |
 
 ### 16.1 根节点 VCF（`vcf_root`）：400 局实测中性
 
@@ -1178,7 +1064,7 @@ last_gen = (entries[-1].get("gen") if entries else (gens[-1] if gens else None))
 
 批确实变大、前向次数确实少了一半，但总吞吐反而下降 29–38%。原因是 **GPU 本来就接近满载**：
 `[net] service 71.6 s (274.7% wall)`、`sum-wait 351.7 s`（每局 22 s，占墙钟 84%）⇒
-三条评估流合计约 13k 状态/s，正好是 §10B 的单流峰值 12k。批凑大后单批更快，但**尾部延迟**从
+三条评估流合计约 13k 状态/s，正好是 §5 测出的单流峰值 12k。批凑大后单批更快，但**尾部延迟**从
 p95 5.3 ms 涨到 22–28 ms，每个对局都要等自己那一批，尾部把收益吃光。
 
 ⇒ 结论：`--eval-batch 24 --window-ms 0.4` 是最优，别改。同时这也解释了历史上 fp16@b64、
@@ -1497,7 +1383,7 @@ lr 衰减 46%，速率掉 60%。形态上是**稳定地慢**，不像饱和（�
 ### 18.4 速度侧（同期结论）
 
 - 每代 **7.0 分钟**（自对弈 364–514 s 波动，训练 37–44 s，门控 60 局摊 38 s/代）
-- 批处理窗口、fp16、CUDA Graph、多进程、workers/eval-threads **全部已否决**（§16.4-8、§10B）
+- 批处理窗口、fp16、CUDA Graph、多进程、workers/eval-threads **全部已否决**（§16.4-8、§5）
 - ⇒ 这台机器在当前参数下的下限就是 ~7 分钟/代，再快只能降 games/sims（那是改棋力口径）
 
 ### 18.5 新增的休眠开关：`--sp-open-plies`（默认 0 = 旧行为）
