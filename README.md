@@ -32,6 +32,11 @@ Bradley-Terry 重拟合，锚点固定为 `gen_002 = 0`。原始数据在 Releas
 竖直虚线标出配方切换的位置。曲线上的小锯齿是采样噪声，150 局的分辨率约 ±28 Elo。
 图是当时的状态快照，后续代数不会自动更新。</sub>
 
+## 算法怎么运作
+
+三张图讲清"一代怎么转、搜索怎么选点、Elo 曲线怎么算出来"，每张都附了"哪里最容易看错"：
+**[`docs/ALGORITHM.md`](docs/ALGORITHM.md)**
+
 ## 为什么是 19×19
 
 开源五子棋引擎几乎清一色 15×15（Gomocup 生态）。19 路意味着**没有现成的对手和基准**，
@@ -49,7 +54,8 @@ C++/  (训练与引擎)                 PYTHON/  (看板与对弈)
  ├─ src/elo_store · elo_run         docs/
  ├─ tools/convert_ckpt.py           ├─ DEVLOG.md   开发日志（含踩坑与实测数据）
  └─ tests/  8 个测试程序，1.4 万项检查   ├─ WEIGHTS.md  权重沿革（Python V1–V4 → 主线）
-                                      └─ ROADMAP.md  下一步：卡在哪、怎么验证
+                                      ├─ ROADMAP.md  下一步：卡在哪、怎么验证
+                                      └─ ALGORITHM.md 算法原理（三张图）
 ```
 
 关键设计（都在 `docs/DEVLOG.md` 里有实测依据）：

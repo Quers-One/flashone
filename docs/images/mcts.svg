@@ -1,0 +1,38 @@
+<svg viewBox="0 0 680 260" width="100%" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>MCTS 单次模拟的四个步骤与 PUCT 选择公式</title>
+<desc>一次模拟依次经过选择、扩展、评估、回传四步；选择用 PUCT 公式，把策略网络的先验概率乘进探索项。</desc>
+<rect width="680" height="260" fill="#ffffff"/>
+<defs>
+  <marker id="ar2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<rect x="40" y="44" width="132" height="62" rx="10" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="56" y="68" font-family="system-ui,sans-serif" font-size="14" font-weight="500" fill="#0C447C">① 选择</text>
+<text x="56" y="87" font-family="system-ui,sans-serif" font-size="12" fill="#185FA5">从根沿 PUCT 下降</text>
+
+<rect x="196" y="44" width="132" height="62" rx="10" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="212" y="68" font-family="system-ui,sans-serif" font-size="14" font-weight="500" fill="#0C447C">② 扩展</text>
+<text x="212" y="87" font-family="system-ui,sans-serif" font-size="12" fill="#185FA5">给叶节点开子节点</text>
+
+<rect x="352" y="44" width="132" height="62" rx="10" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="368" y="68" font-family="system-ui,sans-serif" font-size="14" font-weight="500" fill="#0C447C">③ 评估</text>
+<text x="368" y="87" font-family="system-ui,sans-serif" font-size="12" fill="#185FA5">网络给 P 与 v</text>
+
+<rect x="508" y="44" width="132" height="62" rx="10" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="524" y="68" font-family="system-ui,sans-serif" font-size="14" font-weight="500" fill="#0C447C">④ 回传</text>
+<text x="524" y="87" font-family="system-ui,sans-serif" font-size="12" fill="#185FA5">v 沿路径更新 Q</text>
+
+<line x1="174" y1="75" x2="194" y2="75" stroke="#185FA5" stroke-width="1.5" marker-end="url(#ar2)"/>
+<line x1="330" y1="75" x2="350" y2="75" stroke="#185FA5" stroke-width="1.5" marker-end="url(#ar2)"/>
+<line x1="486" y1="75" x2="506" y2="75" stroke="#185FA5" stroke-width="1.5" marker-end="url(#ar2)"/>
+
+<text x="40" y="140" font-family="system-ui,sans-serif" font-size="12" fill="#5F5E5A">选择这一步用的公式：</text>
+<text x="40" y="166" font-family="ui-monospace,Consolas,monospace" font-size="13" fill="#0C447C">a* = argmax [ Q(s,a) + c · P(s,a) · √N(s) / (1 + N(s,a)) ]</text>
+
+<text x="40" y="196" font-family="system-ui,sans-serif" font-size="12" fill="#5F5E5A">Q 是这条分支的平均价值；P 是策略网络给的先验；分母让探索项随访问次数衰减</text>
+<text x="40" y="216" font-family="system-ui,sans-serif" font-size="12" fill="#5F5E5A">⇒ 先验 0.42 的着法第一次模拟就被访问，先验 0.001 的几乎轮不到</text>
+
+<text x="40" y="244" font-family="system-ui,sans-serif" font-size="12" fill="#888780">根节点 361 个合法着法，只有先验最高的 6 个进树（--max-children 6）；600 次模拟才够用</text>
+</svg>
