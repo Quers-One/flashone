@@ -34,8 +34,20 @@ Bradley-Terry 重拟合，锚点固定为 `gen_002 = 0`。原始数据在 Releas
 
 ## 算法怎么运作
 
-三张图讲清"一代怎么转、搜索怎么选点、Elo 曲线怎么算出来"，每张都附了"哪里最容易看错"：
-**[`docs/ALGORITHM.md`](docs/ALGORITHM.md)**
+**一代的闭环** —— 自对弈 320 局进回放池，训练 800 步后由门控判定；只有采纳时才补打一条 Elo 边。
+
+![一代训练的闭环](docs/images/arch-loop.svg)
+
+**搜索：MCTS + PUCT** —— 四步骨架不变，只是"选择"那一步把策略网络的先验乘进了探索项。
+
+![MCTS 与 PUCT](docs/images/mcts.svg)
+
+**测量：边库 + 全局拟合** —— 曲线不是逐段拼出来的，而是每次用全部对局边重算一遍。
+
+![Elo 曲线](docs/images/elo.svg)
+
+每张图"最容易看错的地方"（比如为什么采纳代是 12 分钟而不是 8.3 分钟、
+为什么新增一条边会让老数据点变化）写在 [`docs/ALGORITHM.md`](docs/ALGORITHM.md)。
 
 ## 为什么是 19×19
 

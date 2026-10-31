@@ -1,44 +1,35 @@
 <svg viewBox="0 0 680 250" width="100%" role="img" xmlns="http://www.w3.org/2000/svg">
-<title>从对局边库到 Elo 曲线的拟合流程</title>
-<desc>每条对局只追加一行记录，全部边一起做 Bradley-Terry 最大似然拟合，锚点固定为最早一代，输出带置信区间的曲线。</desc>
+<title>90 代的 Elo 曲线</title>
+<desc>从 gen_002 的 0 分到 gen_092 的 +201 分，共 14 个实测点，虚线是最小二乘趋势。</desc>
 <rect width="680" height="250" fill="#ffffff"/>
-<defs>
-  <marker id="ar3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </marker>
-</defs>
+<defs><marker id="a4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#B4B2A9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 
-<text x="40" y="42" font-family="system-ui,sans-serif" font-size="14" font-weight="500" fill="#2C2C2A">elo_edges.jsonl（只追加，从不改写）</text>
+<rect x="44" y="26" width="150" height="26" rx="13" fill="#F1EFE8"/>
+<text x="119" y="43" font-family="system-ui,sans-serif" font-size="12" text-anchor="middle" fill="#5F5E5A">elo_edges.jsonl</text>
+<line x1="200" y1="39" x2="230" y2="39" stroke="#B4B2A9" stroke-width="1.2" marker-end="url(#a4)"/>
+<rect x="238" y="26" width="126" height="26" rx="13" fill="#E1F5EE"/>
+<text x="301" y="43" font-family="system-ui,sans-serif" font-size="12" text-anchor="middle" fill="#085041">Bradley-Terry</text>
+<line x1="370" y1="39" x2="400" y2="39" stroke="#B4B2A9" stroke-width="1.2" marker-end="url(#a4)"/>
+<rect x="408" y="26" width="96" height="26" rx="13" fill="#F1EFE8"/>
+<text x="456" y="43" font-family="system-ui,sans-serif" font-size="12" text-anchor="middle" fill="#5F5E5A">elo.json</text>
 
-<rect x="40" y="56" width="240" height="34" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
-<text x="52" y="78" font-family="ui-monospace,Consolas,monospace" font-size="12" fill="#2C2C2A">gen_085 vs gen_086 · 400 局 · 0.488</text>
+<line x1="92" y1="168.0" x2="604" y2="168.0" stroke="#E8E6E0" stroke-width="0.8"/>
+<text x="82" y="172.0" font-family="system-ui,sans-serif" font-size="11" text-anchor="end" fill="#888780">+0</text>
+<line x1="92" y1="118.0" x2="604" y2="118.0" stroke="#E8E6E0" stroke-width="0.8"/>
+<text x="82" y="122.0" font-family="system-ui,sans-serif" font-size="11" text-anchor="end" fill="#888780">+100</text>
+<line x1="92" y1="68.0" x2="604" y2="68.0" stroke="#E8E6E0" stroke-width="0.8"/>
+<text x="82" y="72.0" font-family="system-ui,sans-serif" font-size="11" text-anchor="end" fill="#888780">+200</text>
 
-<rect x="40" y="98" width="240" height="34" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
-<text x="52" y="120" font-family="ui-monospace,Consolas,monospace" font-size="12" fill="#2C2C2A">gen_086 vs gen_092 · 150 局 · 0.460</text>
+<line x1="92" y1="168" x2="604" y2="168" stroke="#B4B2A9" stroke-width="0.8"/>
+<text x="604" y="190" font-family="system-ui,sans-serif" font-size="11" text-anchor="end" fill="#888780">gen_092</text>
 
-<rect x="40" y="140" width="240" height="34" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
-<text x="52" y="162" font-family="ui-monospace,Consolas,monospace" font-size="12" fill="#2C2C2A">gen_070 vs gen_096 · 150 局 · 0.520</text>
+<polyline fill="none" stroke="#0F6E56" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="92.0,168.0 135.6,180.4 190.0,124.9 244.5,118.0 299.0,117.0 353.4,111.1 413.4,101.6 440.6,93.4 467.8,87.2 495.1,94.4 522.3,78.8 544.1,85.6 549.5,81.9 582.2,67.7"/>
+<polyline fill="none" stroke="#888780" stroke-width="1.2" stroke-dasharray="6 4" points="92.0,162.1 604.0,65.9"/>
+<circle cx="92.0" cy="168.0" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="135.6" cy="180.4" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="190.0" cy="124.9" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="244.5" cy="118.0" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="299.0" cy="117.0" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="353.4" cy="111.1" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="413.4" cy="101.6" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="440.6" cy="93.4" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="467.8" cy="87.2" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="495.1" cy="94.4" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="522.3" cy="78.8" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="544.1" cy="85.6" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="549.5" cy="81.9" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/><circle cx="582.2" cy="67.7" r="2.6" fill="#ffffff" stroke="#0F6E56" stroke-width="1.4"/>
 
-<text x="40" y="196" font-family="system-ui,sans-serif" font-size="12" fill="#888780">同一对再打一次就累加局数，旧记录不动</text>
+<circle cx="582.2" cy="67.7" r="4.5" fill="#0F6E56"/>
+<text x="574.2" y="53.7" font-family="system-ui,sans-serif" font-size="13" font-weight="500" text-anchor="end" fill="#085041">+201 Elo</text>
+<text x="100" y="86" font-family="system-ui,sans-serif" font-size="11" fill="#888780">虚线 = 趋势 +2.0 Elo/代</text>
 
-<line x1="284" y1="112" x2="314" y2="112" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#ar3)"/>
-
-<rect x="316" y="84" width="130" height="56" rx="10" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
-<text x="330" y="107" font-family="system-ui,sans-serif" font-size="14" font-weight="500" fill="#085041">BT 全局拟合</text>
-<text x="330" y="126" font-family="system-ui,sans-serif" font-size="12" fill="#0F6E56">最大似然 + bootstrap</text>
-
-<line x1="450" y1="112" x2="480" y2="112" stroke="#0F6E56" stroke-width="1.5" marker-end="url(#ar3)"/>
-
-<rect x="482" y="52" width="158" height="150" rx="10" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="0.5"/>
-
-<line x1="500" y1="176" x2="624" y2="176" stroke="#888780" stroke-width="0.5" stroke-dasharray="4 3"/>
-<text x="500" y="190" font-family="system-ui,sans-serif" font-size="12" fill="#888780">gen_002 = 0</text>
-
-<polyline fill="none" stroke="#0F6E56" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"
-  points="502,172 522,160 542,140 562,128 582,120 602,100 620,92"/>
-<line x1="502" y1="176" x2="620" y2="96" stroke="#0F6E56" stroke-width="1" opacity="0.45" stroke-dasharray="6 4"/>
-<circle cx="620" cy="92" r="3.5" fill="#0F6E56"/>
-<text x="612" y="84" font-family="system-ui,sans-serif" font-size="12" text-anchor="end" fill="#085041">+201</text>
-
-<text x="40" y="236" font-family="system-ui,sans-serif" font-size="12" fill="#888780">锚点固定在最早一代；每次新增边都重算全表 ⇒ 不存在逐段拼接累积的误差</text>
+<text x="44" y="228" font-family="system-ui,sans-serif" font-size="11" fill="#888780">锚点 gen_002 = 0；每段都是同一对模型的直接对打，新增边会用全部边重算，所以老点也会微调</text>
 </svg>
