@@ -46,7 +46,8 @@ C++/  (训练与引擎)                 PYTHON/  (看板与对弈)
  ├─ src/gate        (Wilson 门控)
  ├─ src/elo_store · elo_run         docs/
  ├─ tools/convert_ckpt.py           ├─ DEVLOG.md   开发日志（含踩坑与实测数据）
- └─ tests/  8 个测试程序，1.4 万项检查   └─ WEIGHTS.md  权重沿革（Python V1–V4 → 主线）
+ └─ tests/  8 个测试程序，1.4 万项检查   ├─ WEIGHTS.md  权重沿革（Python V1–V4 → 主线）
+                                      └─ ROADMAP.md  下一步：卡在哪、怎么验证
 ```
 
 关键设计（都在 `docs/DEVLOG.md` 里有实测依据）：
@@ -97,6 +98,13 @@ build\gk.exe loop --dir model/run_v2 --gens 10 --games 320 --sims 600 ^
   都需要外部基准局。
 - **19 路没有对手生态**，想横向比较得先把棋盘改成 15 路（网络是全卷积 + 全局池化，
   权重与尺寸无关，可以直接迁移后微调）。
+
+## 下一步
+
+上面这些不足不是摆设，每一条都对应一个可执行的实验：
+**`docs/ROADMAP.md`** 写了当前卡在哪、四个开放问题各自怎么做、判据是什么、大概多久，
+以及五个可以先上手的小任务（最快的 5 分钟）。负结果同样欢迎——这个项目的配方档案里
+有一半是"已否决"。
 
 ## 许可证
 
