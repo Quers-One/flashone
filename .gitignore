@@ -1,0 +1,104 @@
+# ---- 训练产物：绝不入库（占 8 GB 里的 7.2 GB）----
+*.bin
+*.pt
+*.pt.bak
+model/
+C++/model/
+*/model/
+buffer/
+checkpoints/
+PYTHON/checkpoints/
+PYTHON/models/
+
+# ---- 构建产物 / 本地工具链 ----
+build/
+build_asan/
+C++/build/
+C++/build_asan/
+C++/_smoke/
+C++/tools/*
+!C++/tools/convert_ckpt.py
+*.obj
+*.pdb
+*.exe
+*.ilk
+*.lib
+*.dll
+
+# ---- 实验垃圾与日志 ----
+*.log
+*.ndjson
+C++/_tmp/
+C++/_logs/
+C++/_tmp*
+PYTHON/_tmp*/
+PYTHON/_tmp_*.py
+_tmp/
+*_tmp_*.py
+__pycache__/
+*.pyc
+
+# ---- 第三方源码：只在 README 里致谢，不随仓库分发 ----
+C++/_tmp/rapfi_src/
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# ---- 存档（旧版本、二进制快照，单独打包，不进 git）----
+_archive/
+
+# ---- 备份与系统快捷方式（本机专属）----
+*.bak
+*.bak_*
+*.lnk
+
+# ---- 生成物与对局记录（跑一次就会变，不入库）----
+PYTHON/progress_live.html
+PYTHON/games/
+
+# ---- 面向作者本人的临时入口/杂项 ----
+START_HERE.md
+watch_progress.ps1
+C++/_elev.txt
+
+# ---- 发布附件（14 MB，挂 GitHub Release，不进仓库）----
+dist/
+
+# ---- 临时截图/备份/日志（2026-11-01 清理，之前从目录规则缝里漏进来）----
+PYTHON/_tmp_*
+PYTHON/*.err
+*.log.err
+
+# ---- 个人工作流启动器（只保留 Flash UI.cmd）----
+PYTHON/Flash V3续训.cmd
+PYTHON/Flash 分析台.cmd
+PYTHON/启动莱茵终端.cmd
+
+# ---- 一次性脚本（已跑完，只留本地；结论在 docs/DEVLOG.md）----
+PYTHON/migrate_run3_paths.py
+PYTHON/fix_ladder_logs.py
+PYTHON/init_v3.ps1
+PYTHON/smoke_v3.ps1
+PYTHON/stop_v1_at_gen.ps1
+PYTHON/run_v1_continue.ps1
+PYTHON/run_pilot.ps1
+PYTHON/run_pilot_eval.ps1
+PYTHON/run_big.ps1
+PYTHON/run_big_eval.ps1
+PYTHON/new_ruler.ps1
+PYTHON/watch_ruler.ps1
+PYTHON/pack_resume_in_place.py
+
+# ---- 内部工作记录（公开版是 docs/DEVLOG.md）----
+C++/HANDOFF.md
+C++/SPEED_HANDOFF.md
+C++/ANALYZE_HANDOFF.md
+PYTHON/save_png.ps1
+
+# ---- 开发期探针与验证脚本（绑本机路径/端口，只留本地）----
+PYTHON/probe_*.py
+PYTHON/verify_*.py
+PYTHON/verify_*.ps1

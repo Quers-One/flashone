@@ -1,0 +1,57 @@
+{
+  "id": 4,
+  "name": "训练侧加量 + 门控解除自锁",
+  "created": "2026-10-31",
+  "status": "待验证（gen 64 起，先跑 10 代做 A/B）",
+  "hypothesis": "配方 3 卡住的不是模型，也不是『测不出来』本身，而是两件各自独立、都被忽略的事：\n① 训练侧严重欠量。每代自对弈约 340 s、训练只有 12–17 s，训练占单代 3–4%。配方 3 把 min_steps 160→320 时，实测速率从 1.3 涨到 3.9 Elo/代（gen_050→gen_061 定点对打 +42.8 Elo，CI [8.5,77.0]），说明这个杠杆真实有效，但只推了一档就停了。加到 800 步的代价是训练 32–40 s/代，总时间仅 +6%，而训练是这代里唯一还没被榨干的部分。\n② 门控在自锁。best 自 gen_44 采纳后再未更新，于是门控实际比的不是 gen_N vs gen_{N-1}，而是 gen_N vs gen_44——差距随代数累积，攒到 0.55 才可能通过（gen_58/60 已到 0.55），一旦通过差距归零、又要重新攒十几代。而定点对打已实测模型单调变强（gen_016→gen_061 共 +139 Elo，45 代无一次退化），所以门控的『保护』价值为零，只剩冻住 best 的副作用。\n本配方只动这两处，其余一切照旧，保证与配方 3 的结果可比。",
+  "changed_vs_recipe_3": {
+    "min_steps": "320 → 800（新数据过的遍数约 4.2 → 10.5；训练时间 12–17 s → 约 32–40 s/代。自对弈 340 s 仍占大头，总时间 +6%）",
+    "gate_threshold": "0.55 → 0.52。不再要求『显著强于一个冻结了十几代的旧基线』；门控仍打印胜率供观测，但不该再让 best 长期停在旧版本",
+    "recipe_id": "3 → 4（写进 train_log 每行，看板据此在曲线上竖线标注）",
+    "未改动": "half_life 20 / buffer_size 500000 / hw 0.5 / pw 1 / games 320 / sims 600 全部照旧——这四项各自是独立的 A/B，不混进本配方"
+  },
+  "command": "gk.exe loop --dir model/run_v2 --recipe 4 --gens 10 --games 320 --workers 20 --min-steps 800 --eval-games 60 --eval-every 2 --sims 600 --batch-mcts 16 --batch 256 --lr 0.0003 --lr-gen-decay 0.97 --lr-floor 1e-4 --fresh-ratio 0.5 --eval-batch 24 --eval-threads 3 --half-life 20 --buffer-gens 30 --opening-plies 2 --procs 0 --keep-gens 0 --keep-buffer-gens 12 --hw 0.5 --pw 1 --gate-threshold 0.52 --seed 12345 --nice",
+  "args": {
+    "games": 320,
+    "sims": 600,
+    "min_steps": 800,
+    "batch": 256,
+    "lr": 0.0003,
+    "lr_gen_decay": 0.97,
+    "lr_floor": 0.0001,
+    "fresh_ratio": 0.5,
+    "buffer_gens": 30,
+    "half_life": 20,
+    "eval_games": 60,
+    "eval_every": 2,
+    "eval_batch": 24,
+    "eval_threads": 3,
+    "workers": 20,
+    "gate_threshold": 0.52,
+    "opening_plies": 2,
+    "hw": 0.5,
+    "pw": 1.0,
+    "recipe_id": 4
+  },
+  "expect": "若训练步数是当前的有效杠杆，10 代后 gen_073 应在定点对打中明显强于 gen_063：按配方 3 期间 3.9 Elo/代算，10 代约 +39 Elo，200 局配对开局的标准误 ±25，虽不足以单独判定显著，但方向应明确为正（score_rate > 0.5）。若跑完仍是 0.5 附近甚至为负，说明瓶颈在容量/数据分布而非训练步数，那时该动的是网络宽度或 sims，而不是继续加 steps。",
+  "watch": [
+    "train_log 行末应出现新字段（需 2026-10-31 00:32 之后编译的 gk.exe）：pool_gens 期望约 25、hist_mean_age 期望约 9.7、hist_share20、hist_gens",
+    "train_s 应从 12–17 s 涨到 32–40 s；selfplay_s 应保持 320–460 s 不变（若也变长，是模型变强导致对局手数增加，属正常）",
+    "门控采纳次数应比配方 3 期间（19 代 0 次）明显增加；采纳后 gate_wr 掉回 0.5 附近重新累积是预期行为，不是退化",
+    "best.bin 的 mtime 每代都刷新，但只有在门控采纳时内容才变——要确认内容真的换了，用定点对打测，不要看时间戳",
+    "lr：换配方会把 lr 重设回 --lr 3e-4（pipeline.cpp:439-447 的设计行为），前 1–2 代可能有轻微扰动，之后按 ×0.97 继续退火"
+  ],
+  "verification": {
+    "when": "10 代跑完后",
+    "how": "定点对打，不要用门控判定（门控分辨率 ±45 Elo，而单代进步只有 3–4 Elo）",
+    "cmd": "gk.exe gate --cand model/run_v2/gen_073.bin --best model/run_v2/gen_063.bin --eval-games 200 --sims 600 --blocks 6 --channels 128 --opening-plies 2 --hw 0.5 --pw 1 --seed 777001",
+    "note": "--hw/--pw 必须显式带上，否则走 MCTSOptions 默认值 6.0/0.3，与训练时的 0.5/1.0 不是同一套搜索口径。候选与基线用同一组值即公平。"
+  },
+  "caveats": [
+    "本配方刻意不动 half_life=20 与 buffer_size=500000。buffer_size 是 config.h 的默认值、命令行未传，看板的 18 字段表单里没有这一项（serve_dashboard.py:1073 注释：『配方一共 18 个字段』），所以本配方 args 不列它——但它是回放池的真实约束（池中实际 25 代就是被它卡住的，buffer_gens=30 从未触发）。等 pool_gens 实测值确认后单独做 A/B（预期 --half-life 8 --buffer-size 250000 能把历史样本平均代龄从 9.7 降到约 4）；要改它得走命令行手动跑，或先给看板表单加字段。",
+    "本配方也不动 hw/pw：MCTSOptions 默认值是 6.0/0.3（启发式主导），实际跑的是 0.5/1.0（网络主导），两者相差 20 倍且从未认真 A/B 过——这是下一个独立实验。",
+    "best.bin 内容仍停在 gen_44 直到门控首次采纳；对弈与验收请手动选 gen_* 权重。",
+    "跑之前先确认 buffer/ 目录里的文件数是否远超 12——pipeline.cpp:654 的清理循环在『本次运行代数 < keep_buffer_gens』时不执行，多次短续跑会让旧样本文件堆积并被全量读回内存池，那样 hist_mean_age 的基线是脏的。"
+  ],
+  "lesson": ""
+}

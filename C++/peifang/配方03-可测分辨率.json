@@ -1,0 +1,43 @@
+{
+  "id": 3,
+  "name": "提高可测分辨率的配方",
+  "created": "2026-10-28",
+  "status": "现行（gen 44 起）",
+  "hypothesis": "配方 1 卡住的不是模型，是测量：每代 +1.3 Elo 却用分辨率 ~100 Elo 的 20 局门控去测。本配方把「每代有效更新」和「每次测量的分辨率」同时抬上去，并把 lr 从恒等改成按代退火。",
+  "changed_vs_recipe_1": {
+    "min_steps": "160 → 320（新数据过的遍数 2.1 → 4.2；训练时间 +20 s/代，自对弈 350 s 占大头，可忽略）",
+    "eval_games": "20 → 60（门控分辨率 ~100 → ~55 Elo；每次门控时间 ~23 s → ~70 s，eval_every=2 所以摊到每代 +35 s）",
+    "buffer_gens": "60 → 30（回放池从 ~48.8 万条降到 ~24 万，旧策略目标对梯度的稀释减半）",
+    "lr_gen_decay": "1.0 → 0.97（每代乘一次，地板 1e-4；20 代后 3e-4 → 1.6e-4）",
+    "opening_plies": "0 → 2（门控同一对正反两局用同一盘面，只换黑白；扣掉实测 71% vs 36% 的颜色优势）",
+    "recipe_id": "0 → 3（写进 train_log 每行，看板据此在曲线上标注配方）"
+  },
+  "command": "gk.exe loop --dir model/run_v2 --recipe 3 --gens 40 --games 320 --workers 20 --min-steps 320 --eval-games 60 --eval-every 2 --sims 600 --batch-mcts 16 --batch 256 --lr 0.0003 --lr-gen-decay 0.97 --lr-floor 1e-4 --fresh-ratio 0.5 --eval-batch 24 --eval-threads 3 --half-life 20 --buffer-gens 30 --opening-plies 2 --procs 0 --keep-gens 0 --keep-buffer-gens 12 --hw 0.5 --pw 1 --seed 12345 --nice",
+  "args": {
+    "games": 320,
+    "sims": 600,
+    "min_steps": 320,
+    "batch": 256,
+    "lr": 0.0003,
+    "lr_gen_decay": 0.97,
+    "lr_floor": 0.0001,
+    "fresh_ratio": 0.5,
+    "buffer_gens": 30,
+    "half_life": 20,
+    "eval_games": 60,
+    "eval_every": 2,
+    "eval_batch": 24,
+    "eval_threads": 3,
+    "workers": 20,
+    "gate_threshold": 0.55,
+    "opening_plies": 2,
+    "recipe_id": 3
+  },
+  "expect": "若「进步存在但测不出」是主因，前 10 代内应出现 1–2 次采纳；若 30 代仍零采纳，则说明真的撞上了容量/目标噪声的天花板，那时要动的是网络宽度或 sims，不是测量。",
+  "watch": [
+    "gen 44 起 train_log 应带 recipe_id=3",
+    "门控行应打印「黑 x/30 白 y/30」，且配对开局生效后颜色差应显著缩小",
+    "第 2 代起应看到「[学习率] 按代退火 0.000291 → ...」"
+  ],
+  "lesson": "2026-10-30：gen 46–60 连续 8 次拒绝，但不是失效——净胜局数 −5,−3,−3,−5,−1,+2,+3,+3 在单调变强，只是没到判据要求的 ≥+4（wr>0.55）；30 对配对局的噪声 1σ≈5.5 局，所以门控本就采纳率约 17%。这次揪出两个真 bug 并已修：① 判据是严格大于，33/60=0.5500 连续两次（gen 58、60）被判未达标 → 改成 >=；② lr 按代退火被每次重启 `gk loop` 重置（pipeline 原 `double lr = cfg.lr;`，train_log 里 gen 49、59 复位到 0.000291）→ 改成从 train_log 末行接着退火，换配方才重设，`--lr-reset 1` 可强制重设。教训：配方档里写的「每代 ×0.97」必须先确认续跑不会把它归零，否则一半配方等于没上线。"
+}
