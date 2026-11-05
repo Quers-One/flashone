@@ -1,7 +1,7 @@
-# Flashone — 19×19 五子棋的 AlphaZero 复现（C++ / libtorch）
+# Flashone — 从零训练一个 19×19 五子棋引擎（AlphaZero 式自我对弈，C++ / libtorch）
 
-一个从零训练的 19 路无禁手五子棋引擎：自我对弈 + PUCT 搜索 + 门控评估 + 边库 Elo，
-训练与推理全部是 C++（张量运算走 libtorch），配套一个 Python 实时看板。
+19 路无禁手：没有可复用的权重，也没有可对比的对手。自我对弈 + PUCT 搜索 + 门控评估 +
+边库 Elo，训练与推理全部 C++（张量运算走 libtorch），外加一个 Python 实时看板。
 
 > **English**: A from-scratch AlphaZero-style engine for **19×19 freestyle gomoku**,
 > written in C++ on top of libtorch, with self-play, gated evaluation and an
