@@ -63,7 +63,7 @@ README.md  LICENSE  .gitignore
 docs/        DEVLOG.md（本文）· WEIGHTS.md（权重沿革）
 C++/         CMakeLists.txt · build.bat · README.md（构建、子命令、性能表）
   src/       33 个文件：规则 / MCTS / VCF / 自对弈 / 训练 / 门控 / Elo 边库
-  tests/     13 个测试程序（1.4 万项检查）
+  tests/     13 个可执行诊断（8 个 test_* 测试 + 4 个 probe_* + 1 个 distill），合计 1.4 万项检查
   tools/     convert_ckpt.py（.pt ↔ .bin 互转）
   peifang/   3 份配方档案（假设 / 改动 / 结果 / 教训）
 PYTHON/      53 个文件：看板服务 · 对弈页 · 旧版 Python 原型（train.py / mcts.py / network.py）
