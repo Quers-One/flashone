@@ -296,18 +296,22 @@ int cmd_bench(const Args& a) {
 // 输入：每行 "x1 y1 x2 y2 ..."，黑先、黑白交替，坐标 0..18（同 play 协议的约定）。
 static bool vcf_move_wins(Pos pos, int mx, int my, const VCFOptions& opt) {
     const int who = pos.player;
+    const int opp = 3 - who;
     if (mx < 0 || my < 0 || mx >= SIZE || my >= SIZE || pos.at(mx, my) != 0) return false;
+
     Pos after = pos;
-    if (after.place(mx, my, who)) return true;   // 直接成五
-    if (!after.has_legal()) return false;        // 棋盘填满是平局，不算胜
-    // 我方这一步落下后，对方**任何**应手都必须仍然挡不住 VCF 才算必胜着。
-    // 这比 VCF 本身更严（VCF 只要求对方走唯一挡点），所以只会低估、不会高估。
+    if (after.place(mx, my, who)) return true;      // 直接成五
+    if (!after.has_legal()) return false;           // 棋盘填满是平局
+
+    // 语义：落下这一手之后，**对方无论走哪里**，我方仍然有可证明的必胜 —— 才算胜着。
+    // 注意这不要求本手是「冲四」：活三、双威胁甚至静着，只要胜势不可动摇都算。
+    // 代价是判据偏保守（对方某个应手若让证明跑不出就返回否），只会低估、不会高估。
     for (int y = 0; y < SIZE; ++y)
         for (int x = 0; x < SIZE; ++x) {
             if (after.at(x, y) != 0) continue;
             Pos t = after;
-            if (t.place(x, y, after.player)) return false;   // 对方成五，我们输了
-            if (vcf_win(t, opt) == 0) return false;
+            if (t.place(x, y, opp)) return false;   // 对方直接成五，我们输了
+            if (vcf_win(t, opt) == 0) return false; // 我方拿不出必胜证明
         }
     return true;
 }
