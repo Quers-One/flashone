@@ -18,6 +18,7 @@ C++/build_asan/
 C++/_smoke/
 C++/tools/*
 !C++/tools/convert_ckpt.py
+!C++/tools/vcf_bench.py
 *.obj
 *.pdb
 *.exe

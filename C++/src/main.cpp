@@ -39,6 +39,7 @@
 #include "sysutil.h"
 #include "selfplay.h"
 #include "trainer.h"
+#include "vcf.h"
 
 using namespace gk;
 
@@ -284,6 +285,76 @@ int cmd_bench(const Args& a) {
 //
 // 树复用：用 set_root_move 沿手顺把根推进下去；推不动（比如人类那一手搜索没访问过）
 // 就整体重建 —— 语义与 Python 版一致，只是少一点复用。
+// ------------------------------------------------------------------ VCF 战术基准
+// Elo 只能回答"它比上一代强多少"，回答不了"它算杀能力如何"。这个命令把 VCF
+// （连续冲四）的**穷举证明**当成真值 —— 不是启发式判断，是"这个局面确实存在
+// 强制胜"。于是"在有限算力下能否找到已被证明的胜手"就变成一个可对外比较的数字。
+//
+// 用法：
+//   gk vcfsuite < pos.txt                         每行一个局面，逐行输出是否存在必胜 + 首手
+//   gk vcfsuite --check-x 8 --check-y 7 < pos.txt 判定指定着法是否为必胜着
+// 输入：每行 "x1 y1 x2 y2 ..."，黑先、黑白交替，坐标 0..18（同 play 协议的约定）。
+static bool vcf_move_wins(Pos pos, int mx, int my, const VCFOptions& opt) {
+    const int who = pos.player;
+    if (mx < 0 || my < 0 || mx >= SIZE || my >= SIZE || pos.at(mx, my) != 0) return false;
+    Pos after = pos;
+    if (after.place(mx, my, who)) return true;   // 直接成五
+    if (!after.has_legal()) return false;        // 棋盘填满是平局，不算胜
+    // 我方这一步落下后，对方**任何**应手都必须仍然挡不住 VCF 才算必胜着。
+    // 这比 VCF 本身更严（VCF 只要求对方走唯一挡点），所以只会低估、不会高估。
+    for (int y = 0; y < SIZE; ++y)
+        for (int x = 0; x < SIZE; ++x) {
+            if (after.at(x, y) != 0) continue;
+            Pos t = after;
+            if (t.place(x, y, after.player)) return false;   // 对方成五，我们输了
+            if (vcf_win(t, opt) == 0) return false;
+        }
+    return true;
+}
+
+int cmd_vcfsuite(const Args& a) {
+    VCFOptions vo;
+    vo.max_ply = a.num("vcf-max-ply", vo.max_ply);
+    vo.max_nodes = a.num("vcf-max-nodes", vo.max_nodes);
+    const bool do_check = a.has("check-x") && a.has("check-y");
+    const int qx = a.num("check-x", -1), qy = a.num("check-y", -1);
+
+    std::string line;
+    int idx = 0;
+    while (std::getline(std::cin, line)) {
+        std::istringstream is(line);
+        std::vector<int> mv;
+        int x = 0, y = 0;
+        while (is >> x >> y) mv.push_back(y * SIZE + x);
+        if (mv.empty()) continue;
+        Pos pos;
+        bool bad = false;
+        for (int m : mv) {
+            if (m < 0 || m >= N_CELLS || pos.at(m % SIZE, m / SIZE) != 0) { bad = true; break; }
+            pos.place(m % SIZE, m / SIZE, pos.player);
+        }
+        const double t0 = now_ms();
+        if (bad) {
+            printf("{\"idx\":%d,\"err\":\"badmove\"}\n", idx++);
+        } else if (do_check) {
+            const bool ok = vcf_move_wins(pos, qx, qy, vo);
+            printf("{\"idx\":%d,\"ply\":%d,\"winning\":%d,\"ms\":%.1f}\n",
+                   idx++, (int)mv.size(), ok ? 1 : 0, now_ms() - t0);
+        } else {
+            int cell = -1;
+            const int win = vcf_find_move(pos, &cell, vo);
+            if (win && cell >= 0)
+                printf("{\"idx\":%d,\"ply\":%d,\"vcf\":1,\"x\":%d,\"y\":%d,\"ms\":%.1f}\n",
+                       idx++, (int)mv.size(), cell % SIZE, cell / SIZE, now_ms() - t0);
+            else
+                printf("{\"idx\":%d,\"ply\":%d,\"vcf\":0,\"ms\":%.1f}\n",
+                       idx++, (int)mv.size(), now_ms() - t0);
+        }
+        fflush(stdout);
+    }
+    return 0;
+}
+
 int cmd_play(const Args& a) {
     TrainConfig cfg;
     apply_common(a, cfg);
@@ -1263,6 +1334,7 @@ int main(int argc, char** argv) {
         if (set_below_normal_priority()) printf("[nice] 进程优先级已降为 BelowNormal\n");
     }
     if (cmd == "bench") return cmd_bench(a);
+    if (cmd == "vcfsuite") return cmd_vcfsuite(a);
     if (cmd == "selfplay") return cmd_selfplay(a);
     if (cmd == "worker") return cmd_worker(a);
     if (cmd == "gate") return cmd_gate(a);

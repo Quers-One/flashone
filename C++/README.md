@@ -75,6 +75,16 @@ REM 棋力曲线（KataGo 风格：锚点必须显式指定某一代 = 0 Elo，�
 REM 做法：相邻代两两对局（链）+ 每一代都对锚点打一次（回指），用最小二乘把链解成绝对 Elo
 gk elo --dir model/run_v2 --gens 1,10,24,43 --anchor 10 --eval-games 24 --sims 400
 
+REM VCF 战术基准：判定局面是否存在连续冲四必胜（穷举证明，不是启发式）
+REM   输入每行一个局面 "x1 y1 x2 y2 ..."，逐行输出 JSON
+gk vcfsuite --vcf-max-ply 8 --vcf-max-nodes 2000 < positions.txt
+
+REM 判定某个着法是否为必胜着（比 VCF 本身更严：要求对方任意应手后仍能取胜）
+gk vcfsuite --check-x 9 --check-y 9 --vcf-max-ply 8 --vcf-max-nodes 2000 < positions.txt
+
+REM 跑一遍已发布的题库（41 题，需要权重）
+python tools\vcf_bench.py --replay ..\docs\tactics\vcf_puzzles.tsv
+
 REM 结果写 model\run_v2\elo.json，看板「C++ 棋力曲线」卡直接读它
 
 
